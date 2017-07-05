@@ -1,0 +1,42 @@
+variables:
+  TEST_SERVICE_NAME: "statistics-test"
+  SERVICE_NAME: "statistics"
+  TEST_REPOSITORY: "172.16.10.52:5000"
+  REPOSITORY: "registry.xiaoman.com"
+  VOLUME: ""
+  LINK: ""
+  PORT: "-p 9892:3020"
+  TAG: "latest"
+  TARGET: "-H 172.16.10.51:12375"
+  LATEST_TAG: "latest"
+  
+test:
+  stage: deploy
+  tags: 
+  - dev
+  script:
+  - chmod +x build.sh
+  - chmod -R 777 node_modules
+  - docker run --rm --name node-$SERVICE_NAME -v "$PWD":/app -w /app $TEST_REPOSITORY/node:onbuild sh build.sh
+  - if [ `docker $TARGET ps -f name=$TEST_SERVICE_NAME -q` ] ; then docker $TARGET stop $TEST_SERVICE_NAME; fi
+  - if [ `docker $TARGET ps -f name=$TEST_SERVICE_NAME -qa` ] ; then docker $TARGET rm $TEST_SERVICE_NAME; fi
+  - if [[ `docker images -q $TEST_REPOSITORY/$TEST_SERVICE_NAME:$TAG` ]] ; then docker rmi $TEST_REPOSITORY/$TEST_SERVICE_NAME:$TAG; fi
+  - if [[ `docker $TARGET images -q $TEST_REPOSITORY/$TEST_SERVICE_NAME:$TAG` ]] ; then docker $TARGET rmi $TEST_REPOSITORY/$TEST_SERVICE_NAME:$TAG; fi
+  - docker build -t $TEST_REPOSITORY/$TEST_SERVICE_NAME:$TAG .
+  - docker push $TEST_REPOSITORY/$TEST_SERVICE_NAME:$TAG
+  - docker $TARGET pull $TEST_REPOSITORY/$TEST_SERVICE_NAME:$TAG
+  - docker $TARGET run -d --restart=always --name $TEST_SERVICE_NAME $VOLUME $PORT $LINK $TEST_REPOSITORY/$TEST_SERVICE_NAME:$TAG
+  only:
+  - test
+  
+master:
+  stage: deploy
+  tags: 
+  - product
+  script:
+  - cp objs-product/hs_config.js ./hs/hs_config.js
+  - docker run --rm --name node-$SERVICE_NAME -v "$PWD":/app -w /app $REPOSITORY/node:onbuild sh build.sh
+  - docker build -t $REPOSITORY/$SERVICE_NAME:$LATEST_TAG .
+  - docker push $REPOSITORY/$SERVICE_NAME:$LATEST_TAG
+  only:
+  - master

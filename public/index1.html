@@ -1,0 +1,39 @@
+<html lang="cn">
+<head>
+	<meta charset="UTF-8">
+	<title>tongji</title>
+</head>
+<body>
+	<button id="btn" data-track="Mall_Detail_testclick">test</button>
+	<!-- <img src="http://127.0.0.1:3020/log.gif?data=123"> -->
+	<script src="./jquery.min.js"></script>
+	<script src="./track.js"></script>
+	<script type="text/javascript">
+		$.ajax({
+			type: "get",
+			method: "GET",
+			data: {id:"998"},
+			dataType: "json",
+			url: "http://localhost:3020/api/channel",
+			beforeSend: function(XMLHttpRequest){
+
+			},
+			success: function(data, textStatus){
+				console.log(data);
+			},
+			complete: function(XMLHttpRequest, textStatus){
+				//console.log(XMLHttpRequest);
+			},
+			error: function(err){
+				console.log(err);
+				//请求出错处理
+			}
+		})	
+	</script>
+</body>
+</html>
+<!-- 点击访问使用方法
+引入jquery 和track.js
+给每个标签加上data-track属性
+就可以实现访问
+ -->

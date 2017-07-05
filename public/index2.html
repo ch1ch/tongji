@@ -1,0 +1,146 @@
+<html lang="cn">
+<head>
+	<meta charset="UTF-8">
+	<title>tongji</title>
+	<style type="text/css">
+	.result_box{
+		width: 80%;
+		left:10%;
+		position: relative;
+		/*height: 100px;*/
+	}
+	.result_table ,.result_table tr{
+		width: 100%;
+		border:1px #000 solid;
+	}
+
+	</style>
+</head>
+<body>
+	<button id="btn" data-track="Mall_Detail_testclick">test</button>
+	<div class="result_box">
+		<table class="result_table">
+			<tr>
+				<td>类别</td>
+				<td>购物车买单</td>
+				<td>购物车进入的确认订单</td>
+				<td>转化率</td>
+				<td>商品详情立即购买</td>
+				<td>商品详情的确认订单</td>
+				<td>转化率</td>
+			</tr>
+			<tr id="totalresult">
+				
+			</tr>
+		</table>
+
+	</div>
+	<!-- <div id="totalresult"></div> -->
+	<!-- <img src="http://127.0.0.1:3020/log.gif?data=123"> -->
+	<script src="./jquery.min.js"></script>
+	
+	<script type="text/javascript">
+		$.ajax({
+			type: "post",
+			method: "POST",
+			data: {sql:"select * from tracklog limit 100;"},
+			dataType: "json",
+			url: "http://localhost:3020/api/getresult.api",
+			beforeSend: function(XMLHttpRequest){
+
+			},
+			success: function(data, textStatus){
+				console.log(data);
+				showresult(data);
+			},
+			complete: function(XMLHttpRequest, textStatus){
+				//console.log(XMLHttpRequest);
+			},
+			error: function(err){
+				console.log(err);
+				//请求出错处理
+			}
+		})	
+		//0:"device"1:"guestid"2:"rand"3:"sku"4:"time"5:"trackid"6:"userid"
+		//cart-buy 购物车买单  cart-buy-checkout 购物车进入的确认订单
+			//goods-detail-buy 商品详情的立即购买   goods-detail-buy-checkout 详情的确认订单		
+		function  showresult(data){
+			var resultlist={};
+			var jsonarray= data.rows;
+			//console.log(jsonarray);
+			var daylylist={};
+
+			var totalcount={'cart-buy':0,'cart-buy-checkout':0,'goods-detail-buy':0,'goods-detail-buy-checkout':0,'car-buy':0,'car-buy-checkout':0,} ;
+			$.each(jsonarray, function (i, n)
+			{
+				if (n[5]!='undefined' &&n[4]!= 'undefined' &&n[4]!='12345678') {
+					var guestid=n[1];
+					var time=new Date(parseInt(n[4]));
+					var y, m, d, hh, mm, ss;
+					y = time.getFullYear();
+					m = time.getMonth() + 1;
+					if (m<10) {m='0'+m};
+					d = time.getDate();
+					if (d<10) {d='0'+d};
+					hh = time.getHours();
+					mm = time.getMinutes();
+					ss = time.getSeconds();
+					if (typeof daylylist[''+y+m+d] == "undefined") {
+						daylylist[''+y+m+d]=[n];
+					}else{
+						daylylist[''+y+m+d].push(n);
+					};
+
+				    if (typeof resultlist[guestid]== "undefined") {
+				    	resultlist[guestid]=[n];
+				    }else{
+				    	resultlist[guestid].push(n)
+				    };
+				    //console.log(n[5]);
+				    totalcount[n[5]]++;
+			    };
+			})
+			console.log(resultlist);
+			console.log(daylylist);
+			// console.log(totalcount);
+
+			var cartbuy=totalcount['cart-buy']+totalcount['car-buy'];
+			var cartbuycheck=totalcount['cart-buy-checkout']+totalcount['car-buy-checkout'];
+
+
+			console.log(cartbuy,totalcount['cart-buy-checkout']);
+
+
+			var htmldom='<td>总计</td>'+'<td>'+cartbuy+'</td>'+'<td>'+cartbuycheck+'</td>'+'<td>'+(cartbuycheck/cartbuy).toFixed(2)+'</td>'+'<td>'+totalcount['goods-detail-buy']+'</td>'+'<td>'+totalcount['goods-detail-buy-checkout']+'</td>'+'<td>'+(totalcount['goods-detail-buy-checkout']/totalcount['goods-detail-buy']).toFixed(2)+'</td>';
+			$('#totalresult').html(htmldom);
+			
+			$.each(daylylist, function (i, item){
+				if (i!='19700101') {
+					var daylicount={'cart-buy':0,'cart-buy-checkout':0,'goods-detail-buy':0,'goods-detail-buy-checkout':0,'car-buy':0,'car-buy-checkout':0,};
+					for (var j = 0; j < item.length; j++) {
+						if (item[j][5]!='undefined' &&item[j][4]!= 'undefined'){
+							daylicount[item[j][5]]++;
+						}
+					};
+
+					cartbuy=daylicount['cart-buy']+daylicount['car-buy'];
+					cartbuycheck=daylicount['cart-buy-checkout']+daylicount['car-buy-checkout'];
+
+
+					htmldom='<tr><td>'+i+'</td>'+'<td>'+cartbuy+'</td>'+'<td>'+cartbuycheck+'</td>'+'<td>'+(cartbuycheck/cartbuy).toFixed(2)+'</td>'+'<td>'+daylicount['goods-detail-buy']+'</td>'+'<td>'+daylicount['goods-detail-buy-checkout']+'</td>'+'<td>'+(daylicount['goods-detail-buy-checkout']/daylicount['goods-detail-buy']).toFixed(2)+'</td></tr>';
+					$('.result_table').append(htmldom);
+				};
+			})
+
+
+
+
+		}
+	</script>
+</body>
+</html>
+<!-- 点击访问使用方法
+引入jquery 和track.js
+给每个标签加上data-track属性
+就可以实现访问
+ -->
